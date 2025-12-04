@@ -1,0 +1,45 @@
+# Real State Monitor
+
+Tools to crawl SUUMO listings, cache results to Redis, generate trend graphs, and email daily metrics.
+
+## Setup
+```bash
+bundle install
+```
+
+## Environment Variables
+- `REDIS_URL` (default: `redis://127.0.0.1:6379/0`)
+- `QUIET_MODE` (`1` to suppress per-listing output from `crawler.rb`)
+- SMTP (required for email):
+  - `SMTP_HOST`
+  - `SMTP_PORT` (e.g., `587`)
+  - `SMTP_USER`
+  - `SMTP_PASS` (for Gmail, use an App Password)
+  - `SMTP_FROM` (defaults to `SMTP_USER` if unset)
+  - `SMTP_TO`
+
+## Commands
+- Run crawler (all pages):  
+  ```bash
+  bundle exec ruby crawler.rb
+  ```
+  Limit pages:  
+  ```bash
+  bundle exec ruby crawler.rb 1   # only first page
+  ```
+- Generate graphs (SVG + PNG in `graphs/`):  
+  ```bash
+  bundle exec ruby trend_graphs.rb
+  ```
+- Send metrics email (requires SMTP vars + Redis metrics + graphs present):  
+  ```bash
+  bundle exec ruby send_metrics_email.rb
+  ```
+- Run everything in sequence (set env vars in the script first):  
+  ```bash
+  ./run_all.sh
+  ```
+
+## Notes
+- Crawler stores listings and daily metrics in Redis with prefixes `real_state:*` and `daily_metrics:YYYY_MM_DD`.
+- Graphs are generated from the last 7 days of metrics.
