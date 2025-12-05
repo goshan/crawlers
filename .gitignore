@@ -1,4 +1,5 @@
 vendor/
 graphs/
+logs/
 .bundle/
 .DS_Store
