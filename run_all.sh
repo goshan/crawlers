@@ -19,3 +19,5 @@ bundle exec ruby trend_graphs.rb
 
 # Send metrics email
 bundle exec ruby send_metrics_email.rb
+
+echo "Done."
