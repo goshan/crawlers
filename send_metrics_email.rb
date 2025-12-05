@@ -32,6 +32,11 @@ def attach_file(path, boundary)
   PART
 end
 
+def format_number(number)
+  num_groups = number.to_s.chars.to_a.reverse.each_slice(3)
+  num_groups.map(&:join).join(',').reverse
+end
+
 # Assemble the email with text + attachments.
 def build_email(to:, from:, subject:, body:, attachments:)
   boundary = "BOUNDARY-#{SecureRandom.hex(8)}"
@@ -62,10 +67,10 @@ end
 
 metrics = CacheDriver.new.today_metrics
 body = <<~TEXT
-Metrics for #{metrics["date"]}:
-- Average price/size (all): #{metrics["all_avg"]} (#{metrics.dig("counts", "all")} items)
-- Average price/size (江東区): #{metrics["koto_avg"]} (#{metrics.dig("counts", "koto")} items)
-- Average price/size (亀戸): #{metrics["kamedo_avg"]} (#{metrics.dig("counts", "kamedo")} items)
+Metrics for #{metrics[:date]}:
+- Average price/size (all): #{format_number(metrics[:all_avg].to_i)} (#{format_number(metrics.dig(:counts, :all))} items)
+- Average price/size (江東区): #{format_number(metrics[:koto_avg].to_i)} (#{format_number(metrics.dig(:counts, :koto))} items)
+- Average price/size (亀戸): #{format_number(metrics[:kamedo_avg].to_i)} (#{format_number(metrics.dig(:counts, :kamedo))} items)
 TEXT
 
 attachments = %w[all_trend.png koto_trend.png kameido_trend.png].map do |name|
