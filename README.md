@@ -8,8 +8,13 @@ bundle install
 ```
 
 ## Environment Variables
-- `REDIS_URL` (default: `redis://127.0.0.1:6379/0`)
+- `URL` (required; start URL for the crawler)
+- `MAX_PAGE` (optional; positive integer to limit pagination, default or <=0 for all)
+- `SAMPLING_RATE` (optional; fraction of listings to sample per page, default `1.0`)
+- `REQUESTS_PER_SLEEP` (optional; number of requests before sleeping, default `10`)
+- `SLEEP_SECONDS` (optional; seconds to sleep after each request window, default `10`)
 - `QUIET_MODE` (`1` to suppress per-listing output from `crawler.rb`)
+- `REDIS_URL` (default: `redis://127.0.0.1:6379/0`)
 - SMTP (required for email):
   - `SMTP_HOST`
   - `SMTP_PORT` (e.g., `587`)
@@ -19,13 +24,9 @@ bundle install
   - `SMTP_TO`
 
 ## Commands
-- Run crawler (all pages):  
+- Run crawler (requires `URL`):  
   ```bash
-  bundle exec ruby crawler.rb
-  ```
-  Limit pages:  
-  ```bash
-  bundle exec ruby crawler.rb 1   # only first page
+  URL="https://example.com/path" MAX_PAGE=3 SAMPLING_RATE=0.5 QUIET_MODE=1 bundle exec ruby crawler.rb
   ```
 - Generate graphs (SVG + PNG in `graphs/`):  
   ```bash
