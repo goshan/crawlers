@@ -81,7 +81,7 @@ end.compact
 email = build_email(
   to: TO,
   from: FROM,
-  subject: "Real State Metrics #{Time.now.utc.strftime('%Y-%m-%d')}",
+  subject: "Real State Metrics #{Date.today.strftime('%Y-%m-%d')}",
   body: body,
   attachments: attachments
 )
