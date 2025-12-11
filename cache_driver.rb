@@ -49,15 +49,16 @@ class CacheDriver
   end
 
   def store_daily_metrics(date:, all_avg:, koto_avg:, kamedo_avg:, counts:)
+    date_str = date.strftime("%Y_%m_%d")
     payload = {
-      date: date,
+      date: date_str,
       all_avg: all_avg,
       koto_avg: koto_avg,
       kamedo_avg: kamedo_avg,
       counts: counts,
       cached_at: Time.now.utc.iso8601
     }
-    redis.set(daily_metrics_key(date), JSON.dump(payload))
+    redis.set(daily_metrics_key(date_str), JSON.dump(payload))
     payload
   end
 

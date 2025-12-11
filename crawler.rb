@@ -174,7 +174,8 @@ def run_crawler(start_url, max_page=nil, sampling_rate)
   cache.clear
 
   reset_fetch_counter!
-  puts "scaning from page: #{start_url} with max page: #{max_page} and sampling rate: #{sampling_rate}"
+  puts "scaning from page: #{start_url}"
+  puts "max page: #{max_page} and sampling rate: #{sampling_rate}"
   puts "throttle strategy: window: #{THROTTLE_REQUEST_WINDOW}, delay: #{THROTTLE_SLEEP_SECONDS}"
   deduped_links = collect_unique_paginated_links(agent, start_url, max_page, sampling_rate)
 
@@ -225,7 +226,7 @@ def run_crawler(start_url, max_page=nil, sampling_rate)
   puts "- Average price/size (江東区): #{koto_avg} (#{koto_ratios.size} items)"
   puts "- Average price/size (亀戸): #{kamedo_avg} (#{kamedo_ratios.size} items)"
 
-  today = Time.now.utc.strftime("%Y_%m_%d")
+  today = Date.today
   cache.store_daily_metrics(
     date: today,
     all_avg: all_avg,
