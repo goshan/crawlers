@@ -6,6 +6,10 @@ Tools to crawl SUUMO listings, cache results to Redis, generate trend graphs, an
 ```bash
 bundle install
 ```
+- Install ImageMagick (required by Gruff for graph generation). On macOS with Homebrew:
+  ```bash
+  brew install imagemagick
+  ```
 
 ## Environment Variables
 - `URL` (required; start URL for the crawler)

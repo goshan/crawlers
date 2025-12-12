@@ -73,7 +73,7 @@ Metrics for #{metrics[:date]}:
 - Average price/size (亀戸): #{format_number(metrics[:kamedo_avg].to_i)} (#{format_number(metrics.dig(:counts, :kamedo))} items)
 TEXT
 
-attachments = %w[all_trend.png koto_trend.png kameido_trend.png].map do |name|
+attachments = %w[price_size_trend.png].map do |name|
   path = File.join(GRAPH_DIR, name)
   File.exist?(path) ? path : nil
 end.compact

@@ -1,86 +1,64 @@
 #!/usr/bin/env ruby
 
 require "bundler/setup"
-require "json"
+require "gruff"
 require "date"
+require "fileutils"
 require_relative "./cache_driver"
 
 OUT_DIR = File.expand_path("graphs", __dir__)
-Dir.mkdir(OUT_DIR) unless Dir.exist?(OUT_DIR)
+FileUtils.mkdir_p(OUT_DIR)
 
-def build_series(entries, key)
-  entries.map do |date, payload|
+COLOR_THEME = {
+  all: "#fe6a35",     # orange
+  koto: "#2790cf",      # blue
+  kameido: "#00e272"   # green
+}.freeze
+
+def build_xy_series(entries, key)
+  entries.each_with_index.filter_map do |(date, payload), idx|
     value = payload[key]
-    next nil unless value
-    [date, value.to_f]
-  end.compact
+    next unless value
+    [[idx, value.to_f], date]
+  end
 end
 
-def render_svg(path, title:, series:)
-  width = 700
-  height = 320
-  margin = 50
-  inner_w = width - margin * 2
-  inner_h = height - margin * 2
+def labels_for(entries)
+  entries.each_with_index.to_h { |(date, _), idx| [idx, date.strftime("%m/%d")] }
+end
 
-  return if series.empty?
+def render_combined_chart(path, entries, series_map)
+  return if entries.empty?
 
-  dates, values = series.transpose
-  min_v, max_v = [values.min, values.max]
-  range = (max_v - min_v)
-  range = 1 if range.zero?
+  chart = Gruff::Line.new(900)
+  chart.theme = {
+    colors: COLOR_THEME.values,
+    marker_color: "#6b7280",
+    font_color: "#111827",
+    background_colors: "#ffffff"
+  }
+  chart.title = "Price per Size (Last 7 days)"
+  chart.marker_font_size = 14
+  chart.title_font_size = 18
+  chart.labels = labels_for(entries)
+  chart.legend_box_size = 16
+  chart.line_width = 3
 
-  x_step = series.size > 1 ? inner_w.to_f / (series.size - 1) : 0
-
-  points = series.each_with_index.map do |(_, v), idx|
-    x = margin + idx * x_step
-    y = margin + inner_h - ((v - min_v) / range * inner_h)
-    [x, y]
+  all_values = []
+  series_map.each do |key, data|
+    next if data.empty?
+    points = data.map(&:first)
+    values = points.map { |(_, v)| v }
+    all_values.concat(values)
+    chart.dataxy(key.to_s.capitalize, points, COLOR_THEME[key])
   end
 
-  File.open(path, "w") do |f|
-    f.puts <<~SVG
-      <svg xmlns="http://www.w3.org/2000/svg" width="#{width}" height="#{height}" viewBox="0 0 #{width} #{height}">
-        <style>
-          text { font-family: Arial, sans-serif; font-size: 12px; fill: #333; }
-          .title { font-size: 16px; font-weight: bold; }
-          .axis { stroke: #444; stroke-width: 1; }
-          .grid { stroke: #ccc; stroke-width: 0.5; }
-          .line { fill: none; stroke: #1f77b4; stroke-width: 2; }
-          .dot { fill: #d62728; }
-        </style>
-        <text x="#{margin}" y="25" class="title">#{title}</text>
-        <line x1="#{margin}" y1="#{margin}" x2="#{margin}" y2="#{height - margin}" class="axis"/>
-        <line x1="#{margin}" y1="#{height - margin}" x2="#{width - margin}" y2="#{height - margin}" class="axis"/>
-    SVG
+  return if all_values.empty?
 
-    # Grid and y labels
-    5.times do |i|
-      y = margin + i * (inner_h / 4.0)
-      value = max_v - i * (range / 4.0)
-      f.puts %Q(  <line x1="#{margin}" y1="#{y}" x2="#{width - margin}" y2="#{y}" class="grid"/>)
-      f.puts %Q(  <text x="#{margin - 10}" y="#{y + 4}" text-anchor="end">#{value.round(2)}</text>)
-    end
+  chart.minimum_value = [all_values.min * 0.95, 0].max
+  chart.maximum_value = all_values.max * 1.05
 
-    # X labels and vertical grid
-    series.each_with_index do |(date, _), idx|
-      x = margin + idx * x_step
-      f.puts %Q(  <line x1="#{x}" y1="#{margin}" x2="#{x}" y2="#{height - margin}" class="grid"/>)
-      f.puts %Q(  <text x="#{x}" y="#{height - margin + 15}" text-anchor="middle">#{date.strftime('%m/%d')}</text>)
-    end
-
-    path_d = points.map.with_index do |(x, y), idx|
-      cmd = idx.zero? ? "M" : "L"
-      "#{cmd} #{x} #{y}"
-    end.join(" ")
-    f.puts %Q(  <path d="#{path_d}" class="line"/>)
-
-    points.each do |x, y|
-      f.puts %Q(  <circle cx="#{x}" cy="#{y}" r="3" class="dot"/>)
-    end
-
-    f.puts "</svg>"
-  end
+  chart.write(path)
 end
 
 entries = CacheDriver.new.last_7_days_metrics
@@ -90,22 +68,12 @@ if entries.empty?
   exit 1
 end
 
-all_series = build_series(entries, :all_avg)
-koto_series = build_series(entries, :koto_avg)
-kamedo_series = build_series(entries, :kamedo_avg)
+series_map = {
+  all: build_xy_series(entries, :all_avg),
+  koto: build_xy_series(entries, :koto_avg),
+  kameido: build_xy_series(entries, :kamedo_avg)
+}
 
-render_svg(File.join(OUT_DIR, "all_trend.svg"), title: "Tokyo: Price/Size (Last 7 days)", series: all_series) unless all_series.empty?
-render_svg(File.join(OUT_DIR, "koto_trend.svg"), title: "Kodo-ku: Price/Size (Last 7 days)", series: koto_series) unless koto_series.empty?
-render_svg(File.join(OUT_DIR, "kamedo_trend.svg"), title: "Kamedo: Price/Size (Last 7 days)", series: kamedo_series) unless kamedo_series.empty?
+render_combined_chart(File.join(OUT_DIR, "price_size_trend.png"), entries, series_map)
 
-def convert_svg_to_png(svg_path)
-  png_path = svg_path.sub(/\.svg\z/, ".png")
-  system("convert", svg_path, png_path)
-  png_path
-end
-
-Dir.glob(File.join(OUT_DIR, "*.svg")).each do |svg|
-  convert_svg_to_png(svg)
-end
-
-puts "Graphs generated in #{OUT_DIR} (SVG and PNG)"
+puts "Graphs generated in #{OUT_DIR} (combined PNG)"
