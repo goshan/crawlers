@@ -62,10 +62,10 @@ class CacheDriver
     payload
   end
 
-  # Fetch metrics for last 7 days (date => payload).
-  def last_7_days_metrics
+  # Fetch metrics for last 30 days (date => payload).
+  def last_30_days_metrics
     today = Date.today
-    (0..6).map { |i| today - i }.reverse.filter_map do |date|
+    (0..29).map { |i| today - i }.reverse.filter_map do |date|
       payload = fetch_metrics_for(date)
       payload ? [date, payload] : nil
     end

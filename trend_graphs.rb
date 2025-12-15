@@ -61,7 +61,7 @@ def render_combined_chart(path, entries, series_map)
   chart.write(path)
 end
 
-entries = CacheDriver.new.last_7_days_metrics
+entries = CacheDriver.new.last_30_days_metrics
 
 if entries.empty?
   warn "No metrics found for the last 7 days"
