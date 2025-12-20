@@ -65,13 +65,22 @@ def build_email(to:, from:, subject:, body:, attachments:)
   parts.join
 end
 
+CATEGORIES = {
+  all: "all",
+  koto: "江東区",
+  kamedo: "亀戸",
+  shinagawa: "品川区",
+  minamioi: "南大井",
+  meguro: "目黒区",
+  honcho: "目黒本町"
+}.freeze
+
 metrics = CacheDriver.new.today_metrics
-body = <<~TEXT
-Metrics for #{metrics[:date]}:
-- Average price/size (all): #{format_number(metrics[:all_avg].to_i)} (#{format_number(metrics.dig(:counts, :all))} items)
-- Average price/size (江東区): #{format_number(metrics[:koto_avg].to_i)} (#{format_number(metrics.dig(:counts, :koto))} items)
-- Average price/size (亀戸): #{format_number(metrics[:kamedo_avg].to_i)} (#{format_number(metrics.dig(:counts, :kamedo))} items)
-TEXT
+body = "Metrics for #{metrics[:date]}:\n"
+CATEGORIES.each do |key, location|
+  body += "- Average price/size (#{location}): #{format_number(metrics.dig(:avgs, key).to_i)} (#{format_number(metrics.dig(:counts, key))} items)\n"
+end
+puts body
 
 attachments = %w[price_size_trend.png].map do |name|
   path = File.join(GRAPH_DIR, name)

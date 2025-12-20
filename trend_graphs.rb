@@ -10,14 +10,20 @@ OUT_DIR = File.expand_path("graphs", __dir__)
 FileUtils.mkdir_p(OUT_DIR)
 
 COLOR_THEME = {
-  all: "#fe6a35",     # orange
-  koto: "#2790cf",      # blue
-  kameido: "#00e272"   # green
+  all: "#D62728",          # red
+  koto: "#1F77B4",         # blue-dark
+  kameido: "#00e272",      # blue-light
+  shinagawa: "#9467BD",    # purple-dark
+  minamioi: "#C5B0D5",     # purple-light
+  meguro: "#2CA02C",       # green-dark
+  honcho: "#74C476"        # green-light
 }.freeze
+
+
 
 def build_xy_series(entries, key)
   entries.each_with_index.filter_map do |(date, payload), idx|
-    value = payload[key]
+    value = payload.dig(:avgs, key)
     next unless value
     [[idx, value.to_f], date]
   end
@@ -37,7 +43,7 @@ def render_combined_chart(path, entries, series_map)
     font_color: "#111827",
     background_colors: "#ffffff"
   }
-  chart.title = "Price per Size (Last 7 days)"
+  chart.title = "Price per Size (Last 30 days)"
   chart.marker_font_size = 14
   chart.title_font_size = 18
   chart.labels = labels_for(entries)
@@ -64,16 +70,11 @@ end
 entries = CacheDriver.new.last_30_days_metrics
 
 if entries.empty?
-  warn "No metrics found for the last 7 days"
+  warn "No metrics found for the last 30 days"
   exit 1
 end
 
-series_map = {
-  all: build_xy_series(entries, :all_avg),
-  koto: build_xy_series(entries, :koto_avg),
-  kameido: build_xy_series(entries, :kamedo_avg)
-}
-
+series_map = COLOR_THEME.map { |key, color| [key, build_xy_series(entries, key)] }.to_h
 render_combined_chart(File.join(OUT_DIR, "price_size_trend.png"), entries, series_map)
 
 puts "Graphs generated in #{OUT_DIR} (combined PNG)"

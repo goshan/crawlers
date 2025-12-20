@@ -153,9 +153,7 @@ def extract_price(doc)
   nil
 end
 
-def ratio(item)
-  price = item[:price]
-  size = item[:size]
+def ratio(price, size)
   return nil unless price.is_a?(Numeric) && size.is_a?(Numeric) && size.positive?
   price.to_f / size.to_f
 end
@@ -165,22 +163,40 @@ def avg(values)
   values.sum / values.size.to_f
 end
 
+CATEGORIES = {
+  all: "all",
+  koto: "江東区",
+  kamedo: "亀戸",
+  shinagawa: "品川区",
+  minamioi: "南大井",
+  meguro: "目黒区",
+  honcho: "目黒本町"
+}.freeze
+
+def extract_category(location)
+  CATEGORIES.each do |key, loc_text|
+    return key if location&.include?(loc_text)
+  end
+
+  nil
+end
+
 def run_crawler(start_url, max_page=nil, sampling_rate)
 
   puts "Init agent..."
   agent = Mechanize.new
   agent.user_agent_alias = "Mac Safari"
   cache = CacheDriver.new
-  cache.clear
 
   reset_fetch_counter!
   puts "scaning from page: #{start_url}"
   puts "max page: #{max_page} and sampling rate: #{sampling_rate}"
   puts "throttle strategy: window: #{THROTTLE_REQUEST_WINDOW}, delay: #{THROTTLE_SLEEP_SECONDS}"
   deduped_links = collect_unique_paginated_links(agent, start_url, max_page, sampling_rate)
+  puts "Detail links (#{deduped_links.size} found)"
 
   quiet_mode = quiet_mode_from_env
-  puts "Detail links (#{deduped_links.size} found):"
+  ratios_map = CATEGORIES.map { |key, loc_text| [key, []] }.to_h
   deduped_links.each do |a|
     text = a.text.strip
     text = a["title"].to_s.strip if text.empty?
@@ -199,44 +215,29 @@ def run_crawler(start_url, max_page=nil, sampling_rate)
     completed = cell_text(detail_doc, "築年月")
     location = cell_text(detail_doc, "所在地")
 
-    cache.store_listing(
-      url: target_url,
-      title: (text.empty? ? nil : text),
-      price: price,
-      size: size,
-      completed: completed,
-      location: location
-    )
     unless quiet_mode
       puts "- #{text.empty? ? '[no text]' : text} | 価格: #{price} | 専有面積: #{size} | 築年月: #{completed} | 所在地: #{location} | #{target_url}"
     end
+
+    ratio = ratio(price, size)
+    next if ratio.nil?
+    category = extract_category(location)
+    ratios_map[:all] << ratio
+    ratios_map[category] << ratio unless ratios_map[category].nil?
   end
-
-  listings = cache.all_listings
-  all_ratios = listings.filter_map { |item| ratio(item) }
-  koto_ratios = listings.filter_map { |item| item[:location]&.include?("江東区") ? ratio(item) : nil }.compact
-  kamedo_ratios = listings.filter_map { |item| item[:location]&.include?("亀戸") ? ratio(item) : nil }.compact
-
-  all_avg = avg(all_ratios)
-  koto_avg = avg(koto_ratios)
-  kamedo_avg = avg(kamedo_ratios)
+  avgs_map = ratios_map.map { |key, ratios| [key, avg(ratios)] }.to_h
+  counts_map = ratios_map.map { |key, ratios| [key, ratios.size] }.to_h
 
   puts "\nMetrics:"
-  puts "- Average price/size (all): #{all_avg} (#{all_ratios.size} items)"
-  puts "- Average price/size (江東区): #{koto_avg} (#{koto_ratios.size} items)"
-  puts "- Average price/size (亀戸): #{kamedo_avg} (#{kamedo_ratios.size} items)"
+  avgs_map.each do |key, avg|
+    puts "- Average price/sizee (#{CATEGORIES[key]}): #{avg} (#{counts_map[key]} items)"
+  end
 
   today = Date.today
   cache.store_daily_metrics(
     date: today,
-    all_avg: all_avg,
-    koto_avg: koto_avg,
-    kamedo_avg: kamedo_avg,
-    counts: {
-      all: all_ratios.size,
-      koto: koto_ratios.size,
-      kamedo: kamedo_ratios.size
-    }
+    avgs: avgs_map,
+    counts: counts_map
   )
 end
 
