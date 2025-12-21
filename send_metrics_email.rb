@@ -76,11 +76,10 @@ CATEGORIES = {
 }.freeze
 
 metrics = CacheDriver.new.today_metrics
-body = "Metrics for #{metrics[:date]}:\n"
+body = "Metrics (Average price/size) for #{metrics[:date]}:\n"
 CATEGORIES.each do |key, location|
-  body += "- Average price/size (#{location}): #{format_number(metrics.dig(:avgs, key).to_i)} (#{format_number(metrics.dig(:counts, key))} items)\n"
+  body += "- #{location}: #{format_number(metrics.dig(:avgs, key).to_i)} (#{format_number(metrics.dig(:counts, key))} items)\n"
 end
-puts body
 
 attachments = %w[price_size_trend.png].map do |name|
   path = File.join(GRAPH_DIR, name)
