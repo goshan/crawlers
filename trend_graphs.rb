@@ -12,7 +12,7 @@ FileUtils.mkdir_p(OUT_DIR)
 COLOR_THEME = {
   all: "#D62728",          # red
   koto: "#1F77B4",         # blue-dark
-  kameido: "#00e272",      # blue-light
+  kamedo: "#6BAED6",       # blue-light
   shinagawa: "#9467BD",    # purple-dark
   minamioi: "#C5B0D5",     # purple-light
   meguro: "#2CA02C",       # green-dark

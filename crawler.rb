@@ -173,12 +173,8 @@ CATEGORIES = {
   honcho: "目黒本町"
 }.freeze
 
-def extract_category(location)
-  CATEGORIES.each do |key, loc_text|
-    return key if location&.include?(loc_text)
-  end
-
-  nil
+def extract_categories(location)
+  catetories = CATEGORIES.filter_map { |key, loc_text| key if location&.include?(loc_text) }
 end
 
 def run_crawler(start_url, max_page=nil, sampling_rate)
@@ -221,9 +217,11 @@ def run_crawler(start_url, max_page=nil, sampling_rate)
 
     ratio = ratio(price, size)
     next if ratio.nil?
-    category = extract_category(location)
+    categories = extract_categories(location)
     ratios_map[:all] << ratio
-    ratios_map[category] << ratio unless ratios_map[category].nil?
+    categories.each do |category| 
+      ratios_map[category] << ratio unless ratios_map[category].nil?
+    end
   end
   avgs_map = ratios_map.map { |key, ratios| [key, avg(ratios)] }.to_h
   counts_map = ratios_map.map { |key, ratios| [key, ratios.size] }.to_h
