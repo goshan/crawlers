@@ -64,7 +64,12 @@ def reset_fetch_counter!
 end
 
 def fetch_with_throttle(agent, url)
-  page = agent.get(url)
+  begin
+    page = agent.get(url)
+  rescue StandardError => e
+    warn "Failed to fetch #{target_url}: #{e}"
+    page = nil
+  end
   $fetch_counter[:count] += 1
   sleep(THROTTLE_SLEEP_SECONDS) if THROTTLE_REQUEST_WINDOW.positive? && ($fetch_counter[:count] % THROTTLE_REQUEST_WINDOW).zero?
   page
@@ -85,6 +90,7 @@ def collect_unique_paginated_links(agent, start_url, max_page=nil, sampling_rate
     break if max_page && current_page > max_page
 
     doc = fetch_with_throttle(agent, current).parser
+    next if doc.nil?
 
     # Detect anchors under .property_unit-title (detail links) for this page.
     page_links = doc.css(".property_unit-title a")
@@ -198,12 +204,8 @@ def run_crawler(start_url, max_page=nil, sampling_rate)
     text = a["title"].to_s.strip if text.empty?
     target_url = detail_url_for(a["href"], start_url)
 
-    begin
-      detail_doc = fetch_with_throttle(agent, target_url).parser
-    rescue StandardError => e
-      warn "Failed to fetch #{target_url}: #{e}"
-      next
-    end
+    detail_doc = fetch_with_throttle(agent, target_url).parser
+    next if detail_doc.nil?
 
     price = extract_price(detail_doc) || "-"
     size_raw = cell_text(detail_doc, "専有面積")
