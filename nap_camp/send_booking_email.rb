@@ -74,24 +74,13 @@ if Config.smtp_rehearsal
   exit 0
 end
 
-# ── Collect screenshots ──────────────────────────────────────────────────────
-
-attachments = if Dir.exist?(SCREENSHOT_DIR)
-  Dir.glob(File.join(SCREENSHOT_DIR, "*.png"))
-     .sort_by { |f| File.mtime(f) }
-     .last(MAX_ATTACHMENTS)
-else
-  []
-end
-
 # ── Send email ───────────────────────────────────────────────────────────────
 
 email = build_email(
   to: Config.smtp_to,
   from: Config.smtp_from,
   subject: "nap-camp Booking #{result["status"].upcase} #{Time.now.strftime('%Y-%m-%d')}",
-  body: body,
-  attachments: attachments
+  body: body
 )
 
 Net::SMTP.start(Config.smtp_host, Config.smtp_port, "localhost", Config.smtp_user, Config.smtp_pass, :plain) do |smtp|
