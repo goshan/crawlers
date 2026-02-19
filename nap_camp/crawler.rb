@@ -155,7 +155,7 @@ def login(browser)
 
   if browser.url.include?("sessions/new")
     save_result(status: "error", message: "Login failed — still on login page")
-    exit 1
+    return
   end
   log "Login successful (redirected to: #{browser.url})"
 end
@@ -183,7 +183,7 @@ def get_plans(browser)
 
   if plans.empty?
     save_result(status: "error", message: "No plans found in プラン一覧 section")
-    exit 1
+    return
   end
 
   log "Found #{plans.length} plan(s):"
@@ -281,7 +281,7 @@ def select_dates(browser)
     date_input_el.click
   else
     save_result(status: "error", message: "Could not find the button to open the calendar")
-    exit 1
+    return
   end
   sleep 2
 
@@ -296,7 +296,7 @@ def select_dates(browser)
 
   unless calendar_open
     save_result(status: "error", message: "Could not open the calendar")
-    exit 1
+    return
   end
   log "Calendar opened"
   sleep 0.5
@@ -304,14 +304,14 @@ def select_dates(browser)
   log "Clicking check-in date: #{check_in}"
   unless click_calendar_date(browser, check_in)
     save_result(status: "error", message: "Could not select the check-in date")
-    exit 1
+    return
   end
   sleep 0.5
 
   log "Clicking check-out date: #{check_out}"
   unless click_calendar_date(browser, check_out)
     save_result(status: "error", message: "Could not select the check-out date")
-    exit 1
+    return
   end
 
   sleep 2
@@ -339,7 +339,7 @@ def find_plan_for_book(browser)
       plan_name: Config.target_plan_name,
       dates: [Config.check_in_date, Config.check_out_date]
     )
-    exit 1
+    return
   end
 
   clicked = browser.evaluate(<<~JS)
@@ -357,7 +357,7 @@ def find_plan_for_book(browser)
 
   unless clicked
     save_result(status: "error", message: "Could not click booking button")
-    exit 1
+    return
   end
 
   wait_for_network_idle(browser)
@@ -404,8 +404,6 @@ rescue => e
   log "ERROR: #{e.class}: #{e.message}"
   log e.backtrace.first(5).join("\n")
   save_result(status: "error", message: "#{e.class}: #{e.message}")
-  exit 1
-
 ensure
   if browser
     log "Closing browser..."

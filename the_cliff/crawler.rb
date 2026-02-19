@@ -133,7 +133,6 @@ rescue => e
   log "ERROR: #{e.class}: #{e.message}"
   log e.backtrace.first(5).join("\n")
   save_result(status: "error", message: "#{e.class}: #{e.message}")
-  exit 1
 ensure
   if browser
     log "Closing browser..."
