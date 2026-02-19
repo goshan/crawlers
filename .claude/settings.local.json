@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "WebFetch(domain:www.nap-camp.com)",
-      "Bash(bundle install)",
-      "WebFetch(domain:thecliff.airhost.co)"
-    ]
-  }
-}
