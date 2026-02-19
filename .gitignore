@@ -1,0 +1,9 @@
+.ruby-version
+.bundle/
+.DS_Store
+vendor/
+graphs/
+screenshots/
+logs/
+last_result.json
+.env
