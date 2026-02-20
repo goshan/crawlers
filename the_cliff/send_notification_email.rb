@@ -6,6 +6,12 @@ require_relative "config"
 
 RESULT_FILE = File.expand_path("last_result.json", __dir__)
 
+ACTIONABLE_STATUSES = {
+  "available" => "AVAILABLE",
+  "not_found" => "NOT FOUND",
+  "error" => "ERROR"
+}.freeze
+
 def build_email(to:, from:, subject:, body:)
   boundary = "BOUNDARY-#{SecureRandom.hex(8)}"
   <<~EMAIL
@@ -34,16 +40,14 @@ end
 
 result = JSON.parse(File.read(RESULT_FILE))
 
-ACTIONABLE_STATUSES = %w[available not_found].freeze
-
-unless ACTIONABLE_STATUSES.include?(result["status"])
+unless ACTIONABLE_STATUSES.keys.include?(result['status'])
   puts "Status '#{result["status"]}' — skipping email"
   exit 0
 end
 
 # ── Build body ───────────────────────────────────────────────────────────────
 
-status_label = result["status"] == "available" ? "AVAILABLE" : "NOT FOUND"
+status_label = ACTIONABLE_STATUSES[result['status']]
 
 url = "#{Config.house_url}?start_date=#{result["check_in"]}&end_date=#{result["check_out"]}"
 

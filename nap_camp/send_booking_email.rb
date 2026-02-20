@@ -7,6 +7,11 @@ require_relative "config"
 RESULT_FILE = File.expand_path("last_result.json", __dir__)
 MAX_ATTACHMENTS = 5
 
+STATUS_LABELS = {
+  "success" => "BOOKING CONFIRMED",
+  "error" => "ERROR"
+}.freeze
+
 def build_email(to:, from:, subject:, body:)
   boundary = "BOUNDARY-#{SecureRandom.hex(8)}"
   parts = []
@@ -40,21 +45,16 @@ end
 result = JSON.parse(File.read(RESULT_FILE))
 
 # Only send email for actionable statuses
-unless %w[success error].include?(result["status"])
+unless STATUS_LABELS.keys.include?(result["status"])
   puts "Status '#{result["status"]}' — skipping email"
   exit 0
 end
 
 # ── Build body ───────────────────────────────────────────────────────────────
 
-status_label = {
-  "success" => "BOOKING CONFIRMED",
-  "error" => "ERROR"
-}
-
 body = <<~BODY
 <pre>
-nap-camp Booking Result: #{status_label[result["status"]]}
+nap-camp Booking Result: #{STATUS_LABELS[result["status"]]}
 
 Plan:      #{result["plan_name"] || "N/A"}
 Check-in:  #{result["check_in"] || "N/A"}

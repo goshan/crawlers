@@ -332,10 +332,10 @@ def find_plan_for_book(browser)
   end
 
   if plan_index.nil?
-    log "Target plan not found, unavailable in the target schedule"
+    log "Target plan not found in the target schedule"
     save_result(
-      status: "unavailable",
-      message: "Target plan '#{Config.target_plan_name}' unavailable in the target dates",
+      status: "not_found",
+      message: "Target plan not found in the target dates",
       plan_name: Config.target_plan_name,
       dates: [Config.check_in_date, Config.check_out_date]
     )
