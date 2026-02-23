@@ -181,7 +181,7 @@ def get_plans(browser)
     })()
   JS
 
-  if plans.empty?
+  if plans.nil? || plans.empty?
     save_result(status: "error", message: "No plans found in プラン一覧 section")
     return
   end
