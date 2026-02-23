@@ -178,10 +178,10 @@ begin
     # rush booking
     status = "rush_book"
     message = "Need to rush to book"
-    unless rush_booking(browser)
-      status = "rush_book_failed"
-      message = "failed to rush to book"
-    end
+    #unless rush_booking(browser)
+      #status = "rush_book_failed"
+      #message = "failed to rush to book"
+    #end
   when -1
     status = "not_found"
     message = "Room item '1' not found on the page — page structure may have changed"
