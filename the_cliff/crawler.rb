@@ -67,9 +67,7 @@ def get_available_rooms(browser)
 
       const text = item.textContent;
       if (text.includes('SOLD OUT') || text.includes('完売') || text.includes('満室')) return 0;
-
-      const btn = item.querySelector('button.add-room-button')
-      if (btn.textContent.includes('Add to Cart')) return -2;
+      if (text.includes('Add to Cart')) return -2;
 
       const select = item.querySelector('select');
       if (!select) return 0;
@@ -82,6 +80,7 @@ def get_available_rooms(browser)
   available_rooms
 end
 
+# Unused, in developing
 def rush_booking(browser)
   booking_result = browser.evaluate(<<~JS)
     (() => {
@@ -175,13 +174,8 @@ begin
 
   case available_rooms
   when -2
-    # rush booking
-    status = "rush_book"
-    message = "Need to rush to book"
-    #unless rush_booking(browser)
-      #status = "rush_book_failed"
-      #message = "failed to rush to book"
-    #end
+    status = "rush"
+    message = "There might be chance, rush to check"
   when -1
     status = "not_found"
     message = "Room item '1' not found on the page — page structure may have changed"

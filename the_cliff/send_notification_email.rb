@@ -9,6 +9,7 @@ RESULT_FILE = File.expand_path("last_result.json", __dir__)
 ACTIONABLE_STATUSES = {
   "available" => "AVAILABLE",
   "not_found" => "NOT FOUND",
+  "rush" => "HURRY UP",
   "error" => "ERROR"
 }.freeze
 
@@ -62,7 +63,7 @@ Available: #{result["available"] || "N/A"}
 Timestamp: #{result["timestamp"]}
 
 Message: #{result["message"]}
-#{result["status"] == "available" ? "\nBook now: <a href=\"#{url}\">#{url}</a>" : ""}
+#{result["status"] == "available" || result["status"] == "rush" ? "\nBook now: <a href=\"#{url}\">#{url}</a>" : ""}
 </pre>
 BODY
 
