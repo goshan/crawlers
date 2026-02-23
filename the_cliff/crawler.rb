@@ -68,6 +68,9 @@ def get_available_rooms(browser)
       const text = item.textContent;
       if (text.includes('SOLD OUT') || text.includes('完売') || text.includes('満室')) return 0;
 
+      const btn = item.querySelector('button.add-room-button')
+      if (btn.textContent.includes('Add to Cart')) return -2;
+
       const select = item.querySelector('select');
       if (!select) return 0;
       const rooms = Array.from(item.querySelector('select').children).filter(el => el.getAttribute('disabled') !== 'disabled');
@@ -77,6 +80,40 @@ def get_available_rooms(browser)
 
   log "Availability rooms: #{available_rooms}"
   available_rooms
+end
+
+def rush_booking(browser)
+  booking_result = browser.evaluate(<<~JS)
+    (() => {
+      const booking = document.querySelector('section#booking') ||
+                      document.getElementById('booking') ||
+                      document;
+      const item = Array.from(booking.children).find(el => el.querySelector('h4').textContent.trim() === '1')
+      if (!item) return false;
+
+      const btn = item.querySelector('button.add-room-button')
+      if (btn.textContent.includes('Add to Cart')) return false;
+      btn.click();
+
+      const book_btn = document.querySelector('button[title="Book Now"]')
+      if (!book_btn) return false; 
+      book_btn.click();
+    })()
+  JS
+
+  wait_for_network_idle(browser)
+  sleep 3
+  log "Booking form loaded (URL: #{browser.url})"
+  if browser.url.include?("https://thecliff.airhost.co/en/checkout/address")
+    log "Target plan confirmed"
+    log "Filling login form..."
+    email_input = wait_for(browser, 'input[type="email"], input[name="email"], input[name="session[email]"]')
+    email_input.focus.type(Config.email)
+
+    password_input = wait_for(browser, 'input[type="password"], input[name="password"], input[name="session[password]"]')
+    password_input.focus.type(Config.password)
+
+  end
 end
 
 # ─── Main ────────────────────────────────────────────────────────────────────
@@ -104,6 +141,8 @@ begin
   message = nil
 
   case available_rooms
+  when -2
+    # rush booking
   when -1
     status = "not_found"
     message = "Room item '1' not found on the page — page structure may have changed"
