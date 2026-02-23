@@ -143,6 +143,8 @@ begin
   case available_rooms
   when -2
     # rush booking
+    status = "rush_book"
+    message = "Need to rush to book"
   when -1
     status = "not_found"
     message = "Room item '1' not found on the page — page structure may have changed"
