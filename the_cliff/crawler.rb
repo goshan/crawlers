@@ -89,31 +89,64 @@ def rush_booking(browser)
                       document.getElementById('booking') ||
                       document;
       const item = Array.from(booking.children).find(el => el.querySelector('h4').textContent.trim() === '1')
-      if (!item) return false;
 
-      const btn = item.querySelector('button.add-room-button')
-      if (btn.textContent.includes('Add to Cart')) return false;
-      btn.click();
+      item.querySelector('button.add-room-button').click();
+      item.querySelector('select.select-adult').value = 2
+      item.querySelector('select.select-children').value = 1
 
       const book_btn = document.querySelector('button[title="Book Now"]')
       if (!book_btn) return false; 
       book_btn.click();
+      return true;
     })()
   JS
+  unless booking_result 
+    return false
+  end
 
   wait_for_network_idle(browser)
   sleep 3
   log "Booking form loaded (URL: #{browser.url})"
-  if browser.url.include?("https://thecliff.airhost.co/en/checkout/address")
-    log "Target plan confirmed"
-    log "Filling login form..."
-    email_input = wait_for(browser, 'input[type="email"], input[name="email"], input[name="session[email]"]')
-    email_input.focus.type(Config.email)
-
-    password_input = wait_for(browser, 'input[type="password"], input[name="password"], input[name="session[password]"]')
-    password_input.focus.type(Config.password)
-
+  unless browser.url.include?("https://thecliff.airhost.co/en/checkout/address")
+    log "not booking form, could not rush a room"
+    return false
   end
+
+  log "Filling login form..."
+  first_name_input = wait_for(browser, 'input[type="text"]#airhost_order_preferred_first_name')
+  first_name_input.focus.type("Han")
+
+  last_name_input = wait_for(browser, 'input[type="text"]#airhost_order_preferred_last_name')
+  last_name_input.focus.type("Qiu")
+
+  email_input = wait_for(browser, 'input[type="email"]#airhost_order_email')
+  email_input.focus.type("goshan.hanqiu@gmail.com")
+
+  phone_input = wait_for(browser, 'input[type="text"]#airhost_order_preferred_phone')
+  phone_intpu.focus.type("07013835564")
+
+
+  js = <<~JS
+    (() => {
+      const btn = document.querySelector('button[type="submit"]');
+      if (!btn) return false;
+      btn.click();
+      return true;
+    })()
+  JS
+  result = browser.evaluate(js)
+  unless result
+    return false
+  end
+
+  wait_for_network_idle(browser)
+  sleep 3
+  log "Payment form loaded (URL: #{browser.url})"
+  unless browser.url.include?("https://thecliff.airhost.co/en/checkout/payment")
+    return false
+  end
+      
+  true
 end
 
 # ─── Main ────────────────────────────────────────────────────────────────────
@@ -145,6 +178,10 @@ begin
     # rush booking
     status = "rush_book"
     message = "Need to rush to book"
+    unless rush_booking(browser)
+      status = "rush_book_failed"
+      message = "failed to rush to book"
+    end
   when -1
     status = "not_found"
     message = "Room item '1' not found on the page — page structure may have changed"
