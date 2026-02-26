@@ -17,7 +17,7 @@ def build_email(to:, from:, subject:, body:)
   boundary = "BOUNDARY-#{SecureRandom.hex(8)}"
   <<~EMAIL
   From: #{from}
-  To: #{to}
+  To: #{to.join(", ")}
   Subject: #{subject}
   MIME-Version: 1.0
   Content-Type: multipart/mixed; boundary="#{boundary}"
@@ -87,7 +87,7 @@ email = build_email(
 )
 
 Net::SMTP.start(Config.smtp_host, Config.smtp_port, "localhost", Config.smtp_user, Config.smtp_pass, :plain) do |smtp|
-  smtp.send_message(email, Config.smtp_from, [Config.smtp_to])
+  smtp.send_message(email, Config.smtp_from, Config.smtp_to)
 end
 
-puts "Email sent to #{Config.smtp_to}"
+puts "Email sent to #{Config.smtp_to.join(", ")}"

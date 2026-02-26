@@ -82,6 +82,8 @@ module Config
   end
 
   def self.smtp_to
-    get(:smtp_to)
+    raw = get(:smtp_to)
+    return [] if raw.nil?
+    raw.split(",").map(&:strip).reject(&:empty?)
   end
 end
