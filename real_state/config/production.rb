@@ -4,9 +4,6 @@
   sleep_seconds: 10.0,
   requests_per_sleep: 10,
   max_retry: 5,
-  smtp_host: "smtp.gmail.com",
-  smtp_port: 587,
-  smtp_user: ENV["SMTP_USER"],
-  smtp_pass: ENV["SMTP_PASS"],
-  smtp_to: ENV["SMTP_TO"]
+  db_path: ENV.fetch("DB_PATH", File.expand_path("../../metrics.db", __FILE__)),
+  slack_webhook_url: ENV["SLACK_WEBHOOK_URL"]
 }

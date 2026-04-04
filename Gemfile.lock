@@ -42,10 +42,6 @@ GEM
     net-http-digest_auth (1.4.1)
     net-http-persistent (4.0.6)
       connection_pool (~> 2.2, >= 2.2.4)
-    net-protocol (0.2.2)
-      timeout
-    net-smtp (0.5.1)
-      net-protocol
     nkf (0.2.0)
     nokogiri (1.13.10)
       mini_portile2 (~> 2.8.0)
@@ -54,16 +50,13 @@ GEM
     pkg-config (1.6.5)
     public_suffix (7.0.0)
     racc (1.8.1)
-    redis (5.3.0)
-      redis-client (>= 0.22.0)
-    redis-client (0.26.1)
-      connection_pool
     rmagick (6.1.4)
       observer (~> 0.1)
       pkg-config (~> 1.4)
     rubyntlm (0.6.5)
       base64
-    timeout (0.4.4)
+    sqlite3 (1.7.3)
+      mini_portile2 (~> 2.8.0)
     webrick (1.9.2)
     webrobots (0.1.2)
     websocket-driver (0.8.0)
@@ -80,10 +73,9 @@ DEPENDENCIES
   gruff (~> 0.24)
   mechanize (= 2.8.5)
   mutex_m
-  net-smtp (~> 0.5)
   nkf
   nokogiri (= 1.13.10)
-  redis (= 5.3.0)
+  sqlite3 (~> 1.7)
 
 BUNDLED WITH
    2.7.2

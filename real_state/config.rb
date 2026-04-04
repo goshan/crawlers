@@ -1,12 +1,12 @@
 module Config
   LOCATION_CONFIG = {
-    all: { label: "全体", color: "#D62728" },
-    koto: { label: "江東区", color: "#1F77B4" },
-    kamedo: { label: "亀戸", color: "#6BAED6" },
-    shinagawa: { label: "品川区", color: "#9467BD" },
-    minamioi: { label: "南大井", color: "#C5B0D5" },
-    meguro: { label: "目黒区", color: "#2CA02C" },
-    honcho: { label: "目黒本町", color: "#74C476" }
+    all:       "全体",
+    koto:      "江東区",
+    kamedo:    "亀戸",
+    shinagawa: "品川区",
+    minamioi:  "南大井",
+    meguro:    "目黒区",
+    honcho:    "目黒本町"
   }.freeze
 
   def self.get(key)
@@ -91,38 +91,16 @@ module Config
     default
   end
 
-  def self.redis_url
-    get(:redis_url) || "redis://127.0.0.1:6379/0"
+  def self.db_path
+    get(:db_path) || File.expand_path("../metrics.db", __FILE__)
   end
 
-  def self.smtp_host
-    get(:smtp_host)
+  def self.slack_webhook_url
+    get(:slack_webhook_url)
   end
 
-  def self.smtp_rehearsal
-    self.smtp_host.nil?
-  end
-
-  def self.smtp_port
-    get(:smtp_port)
-  end
-
-  def self.smtp_user
-    get(:smtp_user)
-  end
-
-  def self.smtp_pass
-    get(:smtp_pass)
-  end
-
-  def self.smtp_from
-    get(:smtp_from) || self.smtp_user
-  end
-
-  def self.smtp_to
-    raw = get(:smtp_to)
-    return [] if raw.nil?
-    raw.split(",").map(&:strip).reject(&:empty?)
+  def self.slack_rehearsal
+    self.slack_webhook_url.nil?
   end
 end
 

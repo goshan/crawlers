@@ -3,7 +3,7 @@
 require "bundler/setup"
 require "mechanize"
 require "nokogiri"
-require_relative "./cache_driver"
+require_relative "./metrics_store"
 require File.expand_path('../config', __FILE__)
 
 
@@ -140,7 +140,7 @@ def avg(values)
 end
 
 def extract_categories(location)
-  catetories = Config::LOCATION_CONFIG.filter_map { |key, conf| key if location&.include?(conf[:label]) }
+  catetories = Config::LOCATION_CONFIG.filter_map { |key, name| key if location&.include?(name) }
 end
 
 def run_crawler(start_url, max_page=nil, sampling_rate)
@@ -148,7 +148,7 @@ def run_crawler(start_url, max_page=nil, sampling_rate)
   puts "Init agent..."
   agent = Mechanize.new
   agent.user_agent_alias = "Mac Safari"
-  cache = CacheDriver.new
+  cache = MetricsStore.new
 
   reset_fetch_counter!
   puts "scaning from page: #{start_url}"
@@ -185,20 +185,15 @@ def run_crawler(start_url, max_page=nil, sampling_rate)
       ratios_map[category] << ratio unless ratios_map[category].nil?
     end
   end
-  avgs_map = ratios_map.map { |key, ratios| [key, avg(ratios)] }.to_h
-  counts_map = ratios_map.map { |key, ratios| [key, ratios.size] }.to_h
-
-  puts "\nMetrics:"
-  avgs_map.each do |key, avg|
-    puts "- Average price/sizee (#{Config::LOCATION_CONFIG[key][:label]}): #{avg} (#{counts_map[key]} items)"
-  end
 
   today = Date.today
-  cache.store_daily_metrics(
-    date: today,
-    avgs: avgs_map,
-    counts: counts_map
-  )
+  puts "\nMetrics:"
+  ratios_map.each do |key, ratios|
+    average = avg(ratios)
+    count   = ratios.size
+    puts "- Average price/size (#{Config::LOCATION_CONFIG[key]}): #{average} (#{count} items)"
+    cache.store_daily_metrics(date: today, location_key: key, average: average, count: count)
+  end
 end
 
 if __FILE__ == $PROGRAM_NAME
