@@ -22,6 +22,7 @@ Shared dependencies are managed at the root level (`Gemfile`, `vendor/`).
 - **Web Scraping:** Mechanize + Nokogiri
 - **Storage:** MySQL (via `mysql2` gem)
 - **Notifications:** Slack incoming webhook
+- **Text Encoding:** NKF for Japanese character handling
 
 ### Architecture
 
