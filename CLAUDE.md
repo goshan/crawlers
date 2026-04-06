@@ -117,6 +117,11 @@ bundle exec ruby real_state/db_init.rb
 
 This is safe to re-run at any time — it uses upsert so existing rows are untouched, new locations are inserted, and renamed labels/layers are updated.
 
+> **Existing installs:** if you already have a `locations` table without the `layer` column, `db_init.rb` will not add it automatically. Run this migration manually once:
+> ```sql
+> ALTER TABLE locations ADD COLUMN layer ENUM('all', 'city', 'area') NOT NULL DEFAULT 'area';
+> ```
+
 > **Removing a location:** cannot be automated — the FK constraint on `daily_metrics` prevents deleting a location that has historical rows. To remove one, first delete or reassign its `daily_metrics` rows manually, then delete the row from `locations`.
 
 ---

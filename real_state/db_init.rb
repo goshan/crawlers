@@ -15,10 +15,6 @@ db.query(<<~SQL)
     layer ENUM('all', 'city', 'area')    NOT NULL DEFAULT 'area'
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 SQL
-db.query(<<~SQL)
-  ALTER TABLE locations
-    MODIFY COLUMN layer ENUM('all', 'city', 'area') NOT NULL DEFAULT 'area'
-SQL
 puts "Table 'locations' ready."
 
 db.query(<<~SQL)
