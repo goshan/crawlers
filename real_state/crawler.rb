@@ -140,7 +140,7 @@ def avg(values)
 end
 
 def extract_categories(location)
-  catetories = Config::LOCATION_CONFIG.filter_map { |key, name| key if location&.include?(name) }
+  catetories = Config::LOCATION_CONFIG.filter_map { |key, cfg| key if location&.include?(cfg[:label]) }
 end
 
 def run_crawler(start_url, max_page=nil, sampling_rate)
@@ -191,7 +191,7 @@ def run_crawler(start_url, max_page=nil, sampling_rate)
   ratios_map.each do |key, ratios|
     average = avg(ratios)
     count   = ratios.size
-    puts "- Average price/size (#{Config::LOCATION_CONFIG[key]}): #{average} (#{count} items)"
+    puts "- Average price/size (#{Config::LOCATION_CONFIG[key][:label]}): #{average} (#{count} items)"
     cache.store_daily_metrics(date: today, location_key: key, average: average, count: count)
   end
 end

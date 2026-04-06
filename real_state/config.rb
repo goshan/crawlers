@@ -1,12 +1,12 @@
 module Config
   LOCATION_CONFIG = {
-    all:       "全体",
-    koto:      "江東区",
-    kamedo:    "亀戸",
-    shinagawa: "品川区",
-    minamioi:  "南大井",
-    meguro:    "目黒区",
-    honcho:    "目黒本町"
+    all:       { label: "全体",     layer: :all  },
+    koto:      { label: "江東区",   layer: :city },
+    kamedo:    { label: "亀戸",     layer: :area },
+    shinagawa: { label: "品川区",   layer: :city },
+    minamioi:  { label: "南大井",   layer: :area },
+    meguro:    { label: "目黒区",   layer: :city },
+    honcho:    { label: "目黒本町", layer: :area }
   }.freeze
 
   def self.get(key)

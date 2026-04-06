@@ -95,16 +95,17 @@ Add an entry to `LOCATION_CONFIG` in `real_state/config.rb`:
 
 ```ruby
 LOCATION_CONFIG = {
-  all:      "全体",
+  all:      { label: "全体",  layer: :all  },
   # ... existing locations ...
-  your_key: "地名"
+  your_key: { label: "地名",  layer: :area }
 }.freeze
 ```
 
 | Field | Description |
 |-------|-------------|
 | key (e.g. `your_key`) | A unique Ruby symbol — used as `location_key` in MySQL and as the Slack label key |
-| value | Japanese location string used for **address matching** — the crawler checks if a property's `所在地` (address) field contains this string |
+| `label` | Japanese location string used for **address matching** — the crawler checks if a property's `所在地` (address) field contains this string |
+| `layer` | Granularity level: `:all` (the catch-all aggregate), `:city` (ward/city level, e.g. 江東区), `:area` (neighbourhood within a city, e.g. 亀戸) |
 
 No other files need changes. The crawler, metrics store, and Slack notifier all iterate over `LOCATION_CONFIG` dynamically.
 
@@ -114,7 +115,7 @@ After editing `LOCATION_CONFIG`, re-run `db_init.rb` to sync the `locations` mas
 bundle exec ruby real_state/db_init.rb
 ```
 
-This is safe to re-run at any time — it uses upsert so existing rows are untouched, new locations are inserted, and renamed labels are updated.
+This is safe to re-run at any time — it uses upsert so existing rows are untouched, new locations are inserted, and renamed labels/layers are updated.
 
 > **Removing a location:** cannot be automated — the FK constraint on `daily_metrics` prevents deleting a location that has historical rows. To remove one, first delete or reassign its `daily_metrics` rows manually, then delete the row from `locations`.
 

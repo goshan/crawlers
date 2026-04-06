@@ -13,11 +13,12 @@ end
 metrics = MetricsStore.new.today_metrics
 
 lines = ["*Real State Metrics (Average price/size) — #{metrics[:date].strftime('%Y-%m-%d')}*"]
-Config::LOCATION_CONFIG.each do |key, name|
+Config::LOCATION_CONFIG.each do |key, cfg|
   avg   = format_number(metrics.dig(:metrics, key, :avg).to_i)
   count = format_number(metrics.dig(:metrics, key, :count))
-  lines << "• #{name}: #{avg} 円/㎡  (#{count} items)"
+  lines << "• #{cfg[:label]}: #{avg} 円/㎡  (#{count} items)"
 end
+lines << "<http://dashboard.goshan.info/dashboard/3-real-state|Trend Graph>"
 message = lines.join("\n")
 
 if Config.slack_rehearsal
