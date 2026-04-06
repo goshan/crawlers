@@ -12,13 +12,13 @@ class MetricsStore
 
   def store_daily_metrics(date:, location_key:, average:, count:)
     stmt = @db.prepare(<<~SQL)
-      INSERT INTO daily_metrics (location_key, date, average, count)
+      INSERT INTO daily_metrics (location_code, date, average, count)
       VALUES (?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE average = VALUES(average), count = VALUES(count)
     SQL
     stmt.execute(location_key.to_s, date, average, count)
 
-    { date: date, location_key: location_key, average: average, count: count }
+    { date: date, location_code: location_key, average: average, count: count }
   end
 
   # Fetch metrics for today.
@@ -33,7 +33,7 @@ class MetricsStore
     return nil if rows.empty?
 
     metrics = rows.each_with_object({}) do |row, h|
-      key    = row["location_key"].to_sym
+      key    = row["location_code"].to_sym
       h[key] = { avg: row["average"]&.to_f, count: row["count"]&.to_i }
     end
     { date: date, metrics: metrics }
