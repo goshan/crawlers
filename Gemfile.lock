@@ -33,6 +33,7 @@ GEM
       mime-types-data (~> 3.2025, >= 3.2025.0507)
     mime-types-data (3.2025.0924)
     mini_portile2 (2.8.9)
+    mutex_m (0.3.0)
     mysql2 (0.5.7)
       bigdecimal
     net-http-digest_auth (1.4.1)
@@ -59,6 +60,7 @@ PLATFORMS
 DEPENDENCIES
   ferrum (~> 0.15)
   mechanize (= 2.8.5)
+  mutex_m
   mysql2 (~> 0.5)
   nokogiri (= 1.13.10)
 
