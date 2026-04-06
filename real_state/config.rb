@@ -22,13 +22,7 @@ module Config
       raise "Configuration file not found for environment: #{env}"
     end
     
-    config_data = eval(File.read(config_path))
-
-    if env == 'production'
-      config_data
-    else
-      config_data
-    end
+    eval(File.read(config_path))
   end
 
   def self.start_url
@@ -91,8 +85,15 @@ module Config
     default
   end
 
-  def self.db_path
-    get(:db_path) || File.expand_path("../metrics.db", __FILE__)
+  def self.mysql
+    {
+      host:     get(:mysql_host)     || "127.0.0.1",
+      port:     get(:mysql_port)     || 3306,
+      database: get(:mysql_database) || "real_state",
+      username: get(:mysql_username) || "root",
+      password: get(:mysql_password) || "",
+      encoding: "utf8mb4"
+    }
   end
 
   def self.slack_webhook_url

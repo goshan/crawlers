@@ -12,7 +12,7 @@ end
 
 metrics = MetricsStore.new.today_metrics
 
-lines = ["*Real State Metrics (Average price/size) — #{metrics[:date]}*"]
+lines = ["*Real State Metrics (Average price/size) — #{metrics[:date].strftime('%Y-%m-%d')}*"]
 Config::LOCATION_CONFIG.each do |key, name|
   avg   = format_number(metrics.dig(:metrics, key, :avg).to_i)
   count = format_number(metrics.dig(:metrics, key, :count))

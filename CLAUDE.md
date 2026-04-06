@@ -6,7 +6,7 @@ Monorepo containing multiple web crawlers, each in its own subdirectory.
 
 | Folder | Description |
 |--------|-------------|
-| `real_state/` | Real estate monitor — crawls SUUMO (Japanese real estate site), caches daily metrics in Redis, generates trend graphs, and sends email reports |
+| `real_state/` | Real estate monitor — crawls SUUMO (Japanese real estate site), stores daily metrics in MySQL, and sends Slack reports |
 | `nap_camp/` | Campsite booking automation — uses Ferrum (headless Chrome) to book campsites on nap-camp.com and sends email notifications |
 | `the_cliff/` | Room availability checker — monitors thecliff.airhost.co via headless Chrome and sends email when a room becomes available |
 
@@ -20,17 +20,15 @@ Shared dependencies are managed at the root level (`Gemfile`, `vendor/`).
 
 - **Language:** Ruby
 - **Web Scraping:** Mechanize + Nokogiri
-- **Storage:** Redis (JSON payloads keyed by `daily_metrics:YYYY_MM_DD`)
-- **Graphs:** Gruff (RMagick/ImageMagick backend)
-- **Email:** Net::SMTP with MIME multipart
-- **Text Encoding:** NKF for Japanese character handling
+- **Storage:** MySQL (via `mysql2` gem)
+- **Notifications:** Slack incoming webhook
 
 ### Architecture
 
-Three-stage pipeline: **Crawl → Cache → Report**
+Two-stage pipeline: **Crawl → Notify**
 
 ```
-crawler.rb → cache_driver.rb → trend_graphs.rb / send_metrics_email.rb
+crawler.rb → metrics_store.rb → send_slack_notification.rb
 ```
 
 Orchestrated by `run_all.sh`.
@@ -39,47 +37,48 @@ Orchestrated by `run_all.sh`.
 
 | File | Purpose |
 |------|---------|
-| `real_state/crawler.rb` | Scrapes SUUMO listings, extracts prices/sizes, computes per-sqm ratios, stores in Redis |
+| `real_state/crawler.rb` | Scrapes SUUMO listings, extracts prices/sizes, computes per-sqm ratios, stores in MySQL |
 | `real_state/config.rb` | Configuration module with env-aware loading, type coercion, defaults, and `LOCATION_CONFIG` |
-| `real_state/cache_driver.rb` | Redis read/write layer (`store_daily_metrics`, `last_30_days_metrics`, etc.) |
-| `real_state/trend_graphs.rb` | Generates 30-day line charts as PNG using Gruff with Japanese font support |
-| `real_state/send_metrics_email.rb` | Builds MIME email with metrics text + PNG attachment; supports rehearsal mode |
-| `real_state/run_all.sh` | Runs crawler → graphs → email in sequence |
-| `real_state/config/development.rb` | Dev config (1 page, no throttling) |
-| `real_state/config/production.rb` | Prod config (rate limiting, SMTP credentials from ENV) |
+| `real_state/metrics_store.rb` | MySQL read/write layer (`store_daily_metrics`, `fetch_metrics_for`, etc.) |
+| `real_state/db_init.rb` | One-time setup script — creates `locations` and `daily_metrics` tables and seeds location master data; run once per environment before first crawler run |
+| `real_state/send_slack_notification.rb` | Reads today's metrics from MySQL and posts a formatted message to Slack; supports rehearsal mode |
+| `real_state/run_all.sh` | Runs crawler → Slack notification in sequence |
+| `real_state/config/development.rb` | Dev config (1 page, no throttling, local MySQL) |
+| `real_state/config/production.rb` | Prod config (rate limiting, MySQL + Slack credentials from ENV) |
 
 ### Commands
 
 ```bash
 # Install dependencies
 bundle install
-brew install imagemagick   # macOS system dependency
+
+# One-time DB setup (run once per environment before first crawler run)
+bundle exec ruby real_state/db_init.rb
 
 # Run individual components
 bundle exec ruby real_state/crawler.rb
-bundle exec ruby real_state/trend_graphs.rb
-bundle exec ruby real_state/send_metrics_email.rb
+bundle exec ruby real_state/send_slack_notification.rb
 
 # Run full pipeline
 ./real_state/run_all.sh
 
 # Production mode
-APP_ENV=production bundle exec ruby real_state/crawler.rb
-APP_ENV=production SMTP_USER=x SMTP_PASS=y SMTP_TO=z ./real_state/run_all.sh
+APP_ENV=production \
+  MYSQL_HOST=x MYSQL_USER=x MYSQL_PASS=x MYSQL_DATABASE=x \
+  SLACK_WEBHOOK_URL=x \
+  ./real_state/run_all.sh
 ```
 
 ### Configuration
 
 - `APP_ENV` controls which config file loads from `real_state/config/` (default: `development`)
 - Config files return a Ruby hash and are loaded via `eval`
-- Key settings: `start_url`, `max_page`, `sampling_rate`, `sleep_seconds`, `requests_per_sleep`, `max_retry`, `quiet_mode`, `redis_url`, SMTP credentials
-- Location categories (Koto, Kamedo, Shinagawa, etc.) are defined in `Config::LOCATION_CONFIG` with labels and colors
+- Key settings: `start_url`, `max_page`, `sampling_rate`, `sleep_seconds`, `requests_per_sleep`, `max_retry`, `quiet_mode`, MySQL connection keys, `slack_webhook_url`
+- Location categories are defined in `Config::LOCATION_CONFIG` as a flat `symbol => Japanese name` map
 
 ### External Dependencies
 
-- **Redis** must be running locally (default `redis://127.0.0.1:6379/0`)
-- **ImageMagick** must be installed for graph generation
-- **Japanese font** at `real_state/assets/fonts/NotoSansCJKjp-Regular.otf` for chart labels
+- **MySQL** must be running and accessible — connection configured via `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASS`, `MYSQL_DATABASE`
 
 ### Key Patterns
 
@@ -87,27 +86,36 @@ APP_ENV=production SMTP_USER=x SMTP_PASS=y SMTP_TO=z ./real_state/run_all.sh
 - **Retry logic:** Configurable `max_retry` with backoff for failed HTTP requests
 - **Price extraction:** Multi-strategy parser (hidden inputs → table cells → regex) to handle varied SUUMO page layouts
 - **Location categorization:** Properties matched to categories by address string matching; always includes "all"
-- **Rehearsal mode:** Email prints to stdout when SMTP is not configured
+- **Rehearsal mode:** Slack notification prints to stdout when `SLACK_WEBHOOK_URL` is not set
 
 ### Adding a New Location
 
-To track a new area, add an entry to `LOCATION_CONFIG` in `real_state/config.rb`:
+Add an entry to `LOCATION_CONFIG` in `real_state/config.rb`:
 
 ```ruby
 LOCATION_CONFIG = {
-  all: { label: "全体", color: "#D62728" },
+  all:      "全体",
   # ... existing locations ...
-  your_key: { label: "地名", color: "#HEX_COLOR" }
+  your_key: "地名"
 }.freeze
 ```
 
 | Field | Description |
 |-------|-------------|
-| key (e.g. `your_key`) | A unique Ruby symbol used internally as the metric key in Redis and graph labels |
-| `label` | Japanese location string used for **address matching** — the crawler checks if a property's `所在地` (address) field contains this string. Use a ward name (e.g. `"港区"`) for broad matching or a specific place name (e.g. `"亀戸"`) for narrow matching |
-| `color` | Hex color code for the line on trend graphs |
+| key (e.g. `your_key`) | A unique Ruby symbol — used as `location_key` in MySQL and as the Slack label key |
+| value | Japanese location string used for **address matching** — the crawler checks if a property's `所在地` (address) field contains this string |
 
-No other files need changes. The crawler, graph generator, and email report all iterate over `LOCATION_CONFIG` dynamically.
+No other files need changes. The crawler, metrics store, and Slack notifier all iterate over `LOCATION_CONFIG` dynamically.
+
+After editing `LOCATION_CONFIG`, re-run `db_init.rb` to sync the `locations` master table:
+
+```bash
+bundle exec ruby real_state/db_init.rb
+```
+
+This is safe to re-run at any time — it uses upsert so existing rows are untouched, new locations are inserted, and renamed labels are updated.
+
+> **Removing a location:** cannot be automated — the FK constraint on `daily_metrics` prevents deleting a location that has historical rows. To remove one, first delete or reassign its `daily_metrics` rows manually, then delete the row from `locations`.
 
 ---
 
