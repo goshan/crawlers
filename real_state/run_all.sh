@@ -13,6 +13,6 @@ echo "-----------------execution on $(date '+%Y-%m-%d')-----------------"
 bundle exec ruby "$SCRIPT_DIR/crawler.rb"
 
 # Send Slack notification
-bundle exec ruby "$SCRIPT_DIR/send_slack_notification.rb"
+#bundle exec ruby "$SCRIPT_DIR/send_slack_notification.rb"
 
 echo "Done."
